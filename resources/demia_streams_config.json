@@ -1,0 +1,21 @@
+{
+    "type": "demia",
+    "config": {
+      "provider": {
+        "host": "localhost",
+        "protocol": "http",
+        "port": 8080
+      },
+      "tangle": {
+        "host": "nodes.02.demia-testing-domain.com",
+        "protocol": "https",
+        "port": 443
+      },
+      "encoding": "utf-8",
+      "topic": "Publisher Unique Topic",
+      "backup": {
+        "path": "temp_file",
+        "password": "password"
+      }
+    }
+}
