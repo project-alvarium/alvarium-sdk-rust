@@ -1,0 +1,21 @@
+{
+  "type": "mqtt",
+  "config": {
+    "clientId": "A client ID",
+    "keepAlive": 5,
+    "boundedCap": 100,
+    "qos": 1,
+    "user": "A user ID",
+    "password": "Stream Password",
+    "provider": {
+      "host": "test.mosquitto.org",
+      "port": 8883,
+      "protocol": "tls"
+    },
+    "cleanness": false,
+    "topics": [
+      "Topic1",
+      "Topic2"
+    ]
+  }
+}
