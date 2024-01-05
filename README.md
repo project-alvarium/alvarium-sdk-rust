@@ -169,6 +169,15 @@ impl Annotator for ThresholdAnnotator {
 }
 ```
 
+#### Custom Stream Providers
+The base SDK includes an Mqtt and Demia Streams provider, but new stream providers can be created 
+using the alvarium-annotator [Publisher](https://github.com/DyrellC/alvarium-annotator/blob/main/src/providers.rs#L124)
+trait. So long as this trait is implemented, any custom streaming layer provider will be compatible 
+with the SDK.
+
+You can see the localised implementations for the Mqtt and Demia providers [here](src/providers/stream_provider/mqtt.rs)
+and [here](src/providers/stream_provider/demia.rs).
+
 
 ### API
 The SDK provides a simple API for generating annotations dependent on the actions being taken.
@@ -197,7 +206,7 @@ Used to register creation of new data with the SDK. Passes data through the SDK 
 - data: `&[u8]` -- The data being handled represented as a byte array
 
 
-### Mutate()
+#### Mutate()
 
 ```rust
 pub async fn mutate(&mut self, old: &[u8], new: &[u8]) -> crate::errors::Result<()> 
@@ -211,7 +220,7 @@ Used to register mutation of existing data with the SDK. Passes data through the
 
 Calling this method will link the old data to the new in a lineage. Specific annotations will be applied to the `new` data element.
 
-### Transit()
+#### Transit()
 
 ```rust
 pub async fn transit(&mut self, data: `&[u8]`) -> crate::errors::Result<()>
@@ -223,7 +232,7 @@ Used to annotate data that is neither originated or modified but simply handed f
 - data: `&[u8]` -- The data being handled represented as a byte array
 
 
-### Publish()
+#### Publish()
 
 ```rust
 pub async fn publish(&mut self, data: `&[u8]`) -> crate::errors::Result<()>
