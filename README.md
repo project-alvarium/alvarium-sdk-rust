@@ -22,8 +22,8 @@ To include the rust sdk in your project insert the following into your Cargo.tom
 
 ```
 [dependencies]
-alvarium-annotator = { git = "https://github.com/DyrellC/AlvariumAnnotator" }
-alvarium-rust-sdk = { git = "https://github.com/DyrellC/alvarium-rust-sdk" }
+alvarium-annotator = { git = "https://github.com/project-alvarium/AlvariumAnnotator" }
+alvarium-rust-sdk = { git = "https://github.com/project-alvarium/alvarium-rust-sdk" }
 ```
 
 To use the sdk, you will also need to include an asynchronous runtime environment such as 
@@ -171,7 +171,7 @@ impl Annotator for ThresholdAnnotator {
 
 #### Custom Stream Providers
 The base SDK includes an Mqtt and Demia Streams provider, but new stream providers can be created 
-using the alvarium-annotator [Publisher](https://github.com/DyrellC/alvarium-annotator/blob/main/src/providers.rs#L124)
+using the alvarium-annotator [Publisher](https://github.com/project-alvarium/alvarium-annotator/blob/main/src/providers.rs#L124)
 trait. So long as this trait is implemented, any custom streaming layer provider will be compatible 
 with the SDK.
 

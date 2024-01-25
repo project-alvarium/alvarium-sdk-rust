@@ -19,8 +19,8 @@ md5-rs = "0.1.5"
 hex = "0.4.3"
 base64 = "0.13.0"
 
-alvarium-annotator = { git = "https://github.com/DyrellC/alvarium-annotator" }
-streams = { git = "https://github.com/Immutable-Futures/streams", branch = "develop", default-features = false, features = ["utangle-client", "did"] }
+alvarium-annotator = { git = "https://github.com/project-alvarium/alvarium-annotator" }
+streams = { git = "https://github.com/demia-protocol/streams", branch = "develop", default-features = false, features = ["utangle-client", "did"] }
 iota-crypto = { git = "https://github.com/iotaledger/crypto.rs", rev = "f6f88fc", features = ["ed25519", "sha", "random"]}
 
 serde = "1.0.143"
