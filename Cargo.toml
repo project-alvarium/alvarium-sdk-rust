@@ -21,7 +21,7 @@ base64 = "0.13.0"
 
 alvarium-annotator = { git = "https://github.com/project-alvarium/alvarium-annotator" }
 streams = { git = "https://github.com/demia-protocol/demia-sdk", branch = "master", default-features = false, features = ["utangle-client", "did"] }
-iota-crypto = { git = "https://github.com/iotaledger/crypto.rs", rev = "f6f88fc", features = ["ed25519", "sha", "random"]}
+iota-crypto = {version = "0.23.0", default-features = false, features = ["ed25519", "sha", "random"]}
 
 serde = "1.0.143"
 serde_json = "1.0.83"

@@ -2,7 +2,7 @@ use alvarium_annotator::SignProvider;
 use crate::config::SignatureInfo;
 use crate::errors::{Error, Result};
 use crypto::signatures::ed25519::{
-    PublicKey, SecretKey, Signature, PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH, SIGNATURE_LENGTH,
+    PublicKey, SecretKey, Signature,
 };
 
 pub struct Ed25519Provider {
@@ -44,30 +44,30 @@ impl SignProvider for Ed25519Provider {
 
 pub(crate) fn get_priv_key(key: &str) -> Result<SecretKey> {
     let decoded_key = hex::decode(key)?;
-    match <[u8;SECRET_KEY_LENGTH]>::try_from(decoded_key.as_slice()) {
-        Ok(resized) => Ok(SecretKey::from_bytes(resized)),
-        Err(_) => Err(Error::IncorrectKeySize(decoded_key.len(), SECRET_KEY_LENGTH))
+    match <[u8;SecretKey::LENGTH]>::try_from(decoded_key.as_slice()) {
+        Ok(resized) => Ok(SecretKey::from_bytes(&resized)),
+        Err(_) => Err(Error::IncorrectKeySize(decoded_key.len(), SecretKey::LENGTH))
     }
 }
 
 
 pub(crate) fn get_pub_key(key: &str) -> Result<PublicKey> {
     let decoded_key = hex::decode(key)?;
-    match <[u8;PUBLIC_KEY_LENGTH]>::try_from(decoded_key.as_slice()) {
+    match <[u8;PublicKey::LENGTH]>::try_from(decoded_key.as_slice()) {
         Ok(resized) => {
             match PublicKey::try_from_bytes(resized) {
                 Ok(pub_key) => Ok(pub_key),
                 Err(_) => Err(Error::PublicKeyFailure)
             }
         }
-        Err(_) => Err(Error::IncorrectKeySize(decoded_key.len(), PUBLIC_KEY_LENGTH))
+        Err(_) => Err(Error::IncorrectKeySize(decoded_key.len(), PublicKey::LENGTH))
     }
 }
 
 
 fn get_signature(signature: &[u8]) -> Result<Signature> {
-    match <[u8;SIGNATURE_LENGTH]>::try_from(signature) {
+    match <[u8;Signature::LENGTH]>::try_from(signature) {
         Ok(resized) => Ok(Signature::from_bytes(resized)),
-        Err(_) => Err(Error::IncorrectKeySize(signature.len(), SIGNATURE_LENGTH))
+        Err(_) => Err(Error::IncorrectKeySize(signature.len(), Signature::LENGTH))
     }
 }
