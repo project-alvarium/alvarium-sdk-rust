@@ -1,19 +1,24 @@
-use crate::config::{SdkInfo, StreamInfo};
 use crate::annotations::AnnotationList;
-use alvarium_annotator::{MessageWrapper, Publisher};
-use alvarium_annotator::constants::{ACTION_CREATE, ACTION_MUTATE, ACTION_PUBLISH, ACTION_TRANSIT, ANNOTATION_SOURCE};
-use crate::factories::new_annotator;
+use crate::config::{SdkInfo, StreamInfo};
 use crate::errors::Result;
+use crate::factories::new_annotator;
 use crate::SdkAnnotator;
+use alvarium_annotator::constants::{
+    ACTION_CREATE, ACTION_MUTATE, ACTION_PUBLISH, ACTION_TRANSIT, ANNOTATION_SOURCE,
+};
+use alvarium_annotator::{MessageWrapper, Publisher};
 
 pub struct SDK<'a, Pub: Publisher> {
     annotators: &'a mut [Box<SdkAnnotator>],
     pub cfg: SdkInfo,
-    stream: Pub
+    stream: Pub,
 }
 
 impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error>> SDK<'a, Pub> {
-    pub async fn new(cfg: SdkInfo, annotators: &'a mut [Box<SdkAnnotator>]) -> Result<SDK<'a, Pub>> {
+    pub async fn new(
+        cfg: SdkInfo,
+        annotators: &'a mut [Box<SdkAnnotator>],
+    ) -> Result<SDK<'a, Pub>> {
         let mut publisher = Pub::new(&cfg.stream).await?;
         publisher.connect().await?;
         Ok(SDK {
@@ -26,14 +31,14 @@ impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error>
     pub async fn create(&mut self, data: &[u8]) -> Result<()> {
         let mut ann_list = AnnotationList::default();
         for annotator in self.annotators.iter_mut() {
-            ann_list.items.push(annotator.annotate(data)?);
+            ann_list.items.push(annotator.execute(data)?);
         }
 
         let ann_bytes = serde_json::to_vec(&ann_list)?;
         let wrapper = MessageWrapper {
             action: ACTION_CREATE.clone(),
             message_type: std::any::type_name::<AnnotationList>(),
-            content: &base64::encode(ann_bytes)
+            content: &base64::encode(ann_bytes),
         };
         self.stream.publish(wrapper).await
     }
@@ -42,18 +47,18 @@ impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error>
         let mut ann_list = AnnotationList::default();
 
         let mut source = new_annotator(ANNOTATION_SOURCE.clone(), self.cfg.clone())?;
-        let annotation = source.annotate(old)?;
+        let annotation = source.execute(old)?;
         ann_list.items.push(annotation);
 
         for annotator in self.annotators.iter_mut() {
-            ann_list.items.push(annotator.annotate(new)?);
+            ann_list.items.push(annotator.execute(new)?);
         }
 
         let ann_bytes = serde_json::to_vec(&ann_list)?;
         let wrapper = MessageWrapper {
             action: ACTION_MUTATE.clone(),
             message_type: std::any::type_name::<AnnotationList>(),
-            content: &base64::encode(ann_bytes)
+            content: &base64::encode(ann_bytes),
         };
         self.stream.publish(wrapper).await
     }
@@ -61,14 +66,14 @@ impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error>
     pub async fn transit(&mut self, data: &[u8]) -> Result<()> {
         let mut ann_list = AnnotationList::default();
         for annotator in self.annotators.iter_mut() {
-            ann_list.items.push(annotator.annotate(data)?);
+            ann_list.items.push(annotator.execute(data)?);
         }
 
         let ann_bytes = serde_json::to_vec(&ann_list)?;
         let wrapper = MessageWrapper {
             action: ACTION_TRANSIT.clone(),
             message_type: std::any::type_name::<AnnotationList>(),
-            content: &base64::encode(ann_bytes)
+            content: &base64::encode(ann_bytes),
         };
         self.stream.publish(wrapper).await
     }
@@ -76,31 +81,34 @@ impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error>
     pub async fn publish(&mut self, data: &[u8]) -> Result<()> {
         let mut ann_list = AnnotationList::default();
         for annotator in self.annotators.iter_mut() {
-            ann_list.items.push(annotator.annotate(data)?);
+            ann_list.items.push(annotator.execute(data)?);
         }
 
         let ann_bytes = serde_json::to_vec(&ann_list)?;
         let wrapper = MessageWrapper {
             action: ACTION_PUBLISH.clone(),
             message_type: std::any::type_name::<AnnotationList>(),
-            content: &base64::encode(ann_bytes)
+            content: &base64::encode(ann_bytes),
         };
         self.stream.publish(wrapper).await
     }
 }
 
-
 #[cfg(test)]
 mod sdk_tests {
+    use super::SDK;
+    use crate::factories::new_annotator;
+    use crate::{
+        config::{SdkInfo, Signable, StreamConfig},
+        providers::stream_provider::DemiaPublisher,
+        CONFIG_BYTES,
+    };
+    use alvarium_annotator::Publisher;
     use streams::{
         id::{Ed25519, PermissionDuration, Permissioned},
         transport::utangle::Client,
         User,
     };
-    use alvarium_annotator::Publisher;
-    use crate::{config::{SdkInfo, StreamConfig, Signable}, CONFIG_BYTES, providers::stream_provider::DemiaPublisher};
-    use crate::factories::new_annotator;
-    use super::SDK;
 
     const BASE_TOPIC: &'static str = "Base Topic";
 
@@ -157,7 +165,9 @@ mod sdk_tests {
         let old_data = "Some old state of the data before mutation".to_string();
         let sig = hex::encode([0u8; crypto::signatures::ed25519::SIGNATURE_LENGTH]);
         let signable = Signable::new(data, sig);
-        sdk.mutate(old_data.as_bytes(), signable.to_bytes().as_slice()).await.unwrap();
+        sdk.mutate(old_data.as_bytes(), signable.to_bytes().as_slice())
+            .await
+            .unwrap();
         std::fs::remove_file("temp_file").unwrap();
     }
 
@@ -182,23 +192,37 @@ mod sdk_tests {
 
             // Annotator will receive the announcement and send a subscription, in connect() it would
             // send a subscription request to the oracle, for now we assume permission for connection
-            publisher.client().receive_message(announcement.address()).await.unwrap();
+            publisher
+                .client()
+                .receive_message(announcement.address())
+                .await
+                .unwrap();
             let sub_message = publisher.client().subscribe().await.unwrap();
 
             // Streams author accepts the subscription and dedicates a new branch specifically for
             // the annotator
-            streams_author.receive_message(sub_message.address()).await.unwrap();
-            streams_author.new_branch(BASE_TOPIC, config.topic.as_str()).await.unwrap();
-            streams_author.send_keyload(
-                config.topic.as_str(),
-                vec![Permissioned::ReadWrite(publisher.identifier().clone(), PermissionDuration::Perpetual)],
-                vec![]
-            )
+            streams_author
+                .receive_message(sub_message.address())
+                .await
+                .unwrap();
+            streams_author
+                .new_branch(BASE_TOPIC, config.topic.as_str())
+                .await
+                .unwrap();
+            streams_author
+                .send_keyload(
+                    config.topic.as_str(),
+                    vec![Permissioned::ReadWrite(
+                        publisher.identifier().clone(),
+                        PermissionDuration::Perpetual,
+                    )],
+                    vec![],
+                )
                 .await
                 .unwrap();
 
             publisher.await_keyload().await.unwrap();
-            return publisher
+            return publisher;
         } else {
             panic!("Test configuration is not correct, should be demiaStreams config")
         }
