@@ -10,7 +10,7 @@ pub fn new_annotator(kind: constants::AnnotationType, cfg: SdkInfo) -> Result<Bo
     }
 
     match kind.kind() {
-        "source" => Ok(Box::new(SourceAnnotator::new(&cfg)?)),
+        "src" => Ok(Box::new(SourceAnnotator::new(&cfg)?)),
         "pki" => Ok(Box::new(PkiAnnotator::new(&cfg)?)),
         "tls" => Ok(Box::new(TlsAnnotator::new(&cfg)?)),
         "tpm" => Ok(Box::new(TpmAnnotator::new(&cfg)?)),

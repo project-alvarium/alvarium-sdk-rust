@@ -2,6 +2,7 @@ use crate::annotations::{constants, Annotation, Annotator};
 use crate::config::{self, Signable};
 use crate::errors::{Error, Result};
 use crate::factories::{new_hash_provider, new_signature_provider};
+use crate::managers::tag_manager::TagManager;
 use crate::providers::sign_provider::SignatureProviderWrap;
 use alvarium_annotator::constants::LayerType;
 use alvarium_annotator::{derive_hash, serialise_and_sign};
@@ -11,6 +12,7 @@ pub struct PkiAnnotator {
     kind: constants::AnnotationType,
     sign: SignatureProviderWrap,
     layer: LayerType,
+    tag_manager: TagManager,
 }
 
 impl PkiAnnotator {
@@ -20,6 +22,7 @@ impl PkiAnnotator {
             kind: constants::ANNOTATION_PKI.clone(),
             sign: new_signature_provider(&cfg.signature)?,
             layer: cfg.layer.clone(),
+            tag_manager: TagManager::new(cfg.layer.clone()),
         })
     }
 }
@@ -46,7 +49,9 @@ impl Annotator for PkiAnnotator {
                     self.layer.clone(),
                     self.kind.clone(),
                     verified,
+                    None,
                 );
+                annotation.set_tag(self.tag_manager.get_tag());
                 let signature = serialise_and_sign(&self.sign, &annotation)?;
                 annotation.with_signature(&signature);
                 Ok(annotation)

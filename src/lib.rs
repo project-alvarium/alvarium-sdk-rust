@@ -5,6 +5,7 @@ pub mod config;
 pub mod errors;
 pub mod factories;
 pub mod logging;
+pub mod managers;
 pub mod providers;
 pub mod sdk;
 
@@ -22,7 +23,7 @@ lazy_static! {
         }
     };
     pub static ref MQTT_TEST_CONFIG_BYTES: Vec<u8> =
-        { std::fs::read("resources/mqtt_stream_config.json").unwrap() };
+        std::fs::read("resources/mqtt_stream_config.json").unwrap();
     pub static ref DEMIA_TEST_CONFIG_BYTES: Vec<u8> =
-        { std::fs::read("resources/demia_streams_config.json").unwrap() };
+        std::fs::read("resources/demia_streams_config.json").unwrap();
 }

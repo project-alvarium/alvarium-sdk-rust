@@ -216,7 +216,7 @@ mod demia_test {
         let mut publisher = mock_provider(sdk_info.clone()).await;
 
         let raw_data_msg = "A packet to send to subscribers".to_string();
-        let sig = hex::encode([0u8; crypto::signatures::ed25519::SIGNATURE_LENGTH]);
+        let sig = hex::encode([0u8; crypto::signatures::ed25519::Signature::LENGTH]);
         let signable = Signable::new(raw_data_msg, sig);
 
         let mut list = AnnotationList { items: vec![] };

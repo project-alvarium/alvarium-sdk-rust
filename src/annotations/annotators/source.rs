@@ -3,6 +3,7 @@ use crate::config;
 use crate::config::Signable;
 use crate::errors::{Error, Result};
 use crate::factories::{new_hash_provider, new_signature_provider};
+use crate::managers::tag_manager::TagManager;
 use crate::providers::sign_provider::SignatureProviderWrap;
 use alvarium_annotator::constants::LayerType;
 use alvarium_annotator::{derive_hash, serialise_and_sign};
@@ -12,6 +13,7 @@ pub struct SourceAnnotator {
     kind: constants::AnnotationType,
     sign: SignatureProviderWrap,
     layer: LayerType,
+    tag_manager: TagManager,
 }
 
 impl SourceAnnotator {
@@ -21,6 +23,7 @@ impl SourceAnnotator {
             kind: constants::ANNOTATION_SOURCE.clone(),
             sign: new_signature_provider(&cfg.signature)?,
             layer: cfg.layer.clone(),
+            tag_manager: TagManager::new(cfg.layer.clone()),
         })
     }
 }
@@ -44,7 +47,9 @@ impl Annotator for SourceAnnotator {
                     self.layer.clone(),
                     self.kind.clone(),
                     true,
+                    None,
                 );
+                annotation.set_tag(self.tag_manager.get_tag());
                 let signature = serialise_and_sign(&self.sign, &annotation)?;
                 annotation.with_signature(&signature);
                 Ok(annotation)
@@ -58,7 +63,30 @@ impl Annotator for SourceAnnotator {
 mod source_tests {
     use crate::annotations::{constants, Annotator, SourceAnnotator};
     use crate::config::Signable;
+    use crate::managers::tag_manager::TAG_ENV_KEY;
     use crate::{config, providers::sign_provider::get_priv_key};
+
+    #[test]
+    fn tag_source_annotator() {
+        let config: config::SdkInfo =
+            serde_json::from_slice(crate::CONFIG_BYTES.as_slice()).unwrap();
+
+        let data = String::from("Some random data");
+        let sig = hex::encode([0u8; crypto::signatures::ed25519::Signature::LENGTH]);
+
+        let signable = Signable::new(data, sig);
+        let serialised = serde_json::to_vec(&signable).unwrap();
+
+        let mut source_annotator = SourceAnnotator::new(&config).unwrap();
+        let annotation = source_annotator.execute(&serialised).unwrap();
+        assert!(annotation.tag.is_some());
+        assert_eq!(annotation.tag.unwrap(), "");
+
+        let annotation = source_annotator.execute(&serialised).unwrap();
+        std::env::set_var(TAG_ENV_KEY, "TAG");
+        assert!(annotation.tag.is_some());
+        assert_eq!(annotation.tag.unwrap(), "TAG");
+    }
 
     #[test]
     fn valid_and_invalid_source_annotator() {
@@ -69,7 +97,7 @@ mod source_tests {
         config2.hash.hash_type = constants::HashType("Not a known hash type".to_string());
 
         let data = String::from("Some random data");
-        let sig = hex::encode([0u8; crypto::signatures::ed25519::SIGNATURE_LENGTH]);
+        let sig = hex::encode([0u8; crypto::signatures::ed25519::Signature::LENGTH]);
 
         let signable = Signable::new(data, sig);
         let serialised = serde_json::to_vec(&signable).unwrap();
@@ -100,6 +128,7 @@ mod source_tests {
         let mut source_annotator = SourceAnnotator::new(&config).unwrap();
         let annotation = source_annotator.execute(&serialised).unwrap();
 
+        assert!(annotation.tag.is_some());
         assert!(annotation.validate_base());
         assert_eq!(annotation.kind, *constants::ANNOTATION_SOURCE);
         assert_eq!(

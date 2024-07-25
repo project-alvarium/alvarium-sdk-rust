@@ -1,6 +1,7 @@
 use crate::annotations::{constants, Annotation, Annotator};
 use crate::config;
 use crate::errors::{Error, Result};
+use crate::managers::tag_manager::TagManager;
 use alvarium_annotator::constants::LayerType;
 use alvarium_annotator::{derive_hash, serialise_and_sign};
 
@@ -19,6 +20,7 @@ pub struct TpmAnnotator {
     kind: constants::AnnotationType,
     sign: SignatureProviderWrap,
     layer: LayerType,
+    tag_manager: TagManager,
 }
 
 impl TpmAnnotator {
@@ -28,6 +30,7 @@ impl TpmAnnotator {
             kind: constants::ANNOTATION_TPM.clone(),
             sign: new_signature_provider(&cfg.signature)?,
             layer: cfg.layer.clone(),
+            tag_manager: TagManager::new(cfg.layer.clone()),
         })
     }
 
@@ -83,7 +86,9 @@ impl Annotator for TpmAnnotator {
                     self.layer.clone(),
                     self.kind.clone(),
                     is_satisfied,
+                    None,
                 );
+                annotation.set_tag(self.tag_manager.get_tag());
                 let signature = serialise_and_sign(&self.sign, &annotation)?;
                 annotation.with_signature(&signature);
                 Ok(annotation)

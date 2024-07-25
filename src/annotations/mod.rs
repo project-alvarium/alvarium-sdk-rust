@@ -17,5 +17,6 @@ pub fn mock_annotation() -> Annotation {
         constants::LAYER_APP.clone(),
         kind,
         satisfied,
+        None,
     )
 }

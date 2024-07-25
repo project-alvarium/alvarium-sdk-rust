@@ -1,6 +1,7 @@
 use crate::annotations::{constants, Annotation, Annotator};
 use crate::config;
 use crate::errors::{Error, Result};
+use crate::managers::tag_manager::TagManager;
 use alvarium_annotator::constants::LayerType;
 use alvarium_annotator::{derive_hash, serialise_and_sign};
 #[cfg(feature = "rustls")]
@@ -23,6 +24,7 @@ pub struct TlsAnnotator {
     kind: constants::AnnotationType,
     sign: SignatureProviderWrap,
     layer: LayerType,
+    tag_manager: TagManager,
 
     // TODO: Make type for this
     #[cfg(feature = "native-tls")]
@@ -40,6 +42,7 @@ impl TlsAnnotator {
             hash: cfg.hash.hash_type.clone(),
             kind: constants::ANNOTATION_TLS.clone(),
             sign: new_signature_provider(&cfg.signature)?,
+            tag_manager: TagManager::new(cfg.layer.clone()),
             layer: cfg.layer.clone(),
             #[cfg(feature = "native-tls")]
             conn_native: None,
@@ -163,7 +166,9 @@ impl Annotator for TlsAnnotator {
                     self.layer.clone(),
                     self.kind.clone(),
                     is_satisfied,
+                    None,
                 );
+                annotation.set_tag(self.tag_manager.get_tag());
                 let signature = serialise_and_sign(&self.sign, &annotation)?;
                 annotation.with_signature(&signature);
                 Ok(annotation)
@@ -193,7 +198,7 @@ mod tls_tests {
         config2.hash.hash_type = constants::HashType("Not a known hash type".to_string());
 
         let data = String::from("Some random data");
-        let sig = hex::encode([0u8; crypto::signatures::ed25519::SIGNATURE_LENGTH]);
+        let sig = hex::encode([0u8; crypto::signatures::ed25519::Signature::LENGTH]);
 
         let signable = Signable::new(data, sig);
         let serialised = serde_json::to_vec(&signable).unwrap();
@@ -247,7 +252,7 @@ mod tls_tests {
             serde_json::from_slice(crate::CONFIG_BYTES.as_slice()).unwrap();
 
         let data = String::from("Some random data");
-        let sig = hex::encode([0u8; crypto::signatures::ed25519::SIGNATURE_LENGTH]);
+        let sig = hex::encode([0u8; crypto::signatures::ed25519::Signature::LENGTH]);
 
         let signable = Signable::new(data, sig);
         let serialised = serde_json::to_vec(&signable).unwrap();
