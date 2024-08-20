@@ -28,6 +28,18 @@ impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error>
         })
     }
 
+    pub async fn new_with_publisher(
+        cfg: SdkInfo,
+        publisher: Pub,
+        annotators: &'a mut [Box<SdkAnnotator>],
+    ) -> Result<SDK<'a, Pub>> {
+        Ok(SDK {
+            annotators,
+            cfg,
+            stream: publisher,
+        })
+    }
+
     pub async fn create(&mut self, data: &[u8]) -> Result<()> {
         let mut ann_list = AnnotationList::default();
         for annotator in self.annotators.iter_mut() {
