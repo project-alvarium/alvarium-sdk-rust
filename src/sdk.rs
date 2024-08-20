@@ -14,7 +14,7 @@ pub struct SDK<'a, Pub: Publisher> {
     stream: Pub,
 }
 
-impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error>> SDK<'a, Pub> {
+impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error> + Send + Sync> SDK<'a, Pub> {
     pub async fn new(
         cfg: SdkInfo,
         annotators: &'a mut [Box<SdkAnnotator>],

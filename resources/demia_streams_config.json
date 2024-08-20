@@ -8,8 +8,8 @@
       },
       "tangle": {
         "host": "nodes.02.demia-testing-domain.com",
-        "protocol": "https",
-        "port": 443
+        "protocol": "http",
+        "port": 14102
       },
       "encoding": "utf-8",
       "topic": "Publisher Unique Topic",
