@@ -14,13 +14,25 @@ pub struct SDK<'a, Pub: Publisher> {
     stream: Pub,
 }
 
-impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error>> SDK<'a, Pub> {
+impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error> + Send + Sync> SDK<'a, Pub> {
     pub async fn new(
         cfg: SdkInfo,
         annotators: &'a mut [Box<SdkAnnotator>],
     ) -> Result<SDK<'a, Pub>> {
         let mut publisher = Pub::new(&cfg.stream).await?;
         publisher.connect().await?;
+        Ok(SDK {
+            annotators,
+            cfg,
+            stream: publisher,
+        })
+    }
+
+    pub async fn new_with_publisher(
+        cfg: SdkInfo,
+        publisher: Pub,
+        annotators: &'a mut [Box<SdkAnnotator>],
+    ) -> Result<SDK<'a, Pub>> {
         Ok(SDK {
             annotators,
             cfg,

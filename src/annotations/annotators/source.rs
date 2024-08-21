@@ -82,8 +82,8 @@ mod source_tests {
         assert!(annotation.tag.is_some());
         assert_eq!(annotation.tag.unwrap(), "");
 
-        let annotation = source_annotator.execute(&serialised).unwrap();
         std::env::set_var(TAG_ENV_KEY, "TAG");
+        let annotation = source_annotator.execute(&serialised).unwrap();
         assert!(annotation.tag.is_some());
         assert_eq!(annotation.tag.unwrap(), "TAG");
     }

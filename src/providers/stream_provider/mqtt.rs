@@ -1,13 +1,15 @@
+use std::sync::Arc;
 use crate::config::{MqttStreamConfig, StreamConfig, StreamInfo};
 use crate::errors::{Error, Result};
 use alvarium_annotator::{MessageWrapper, Publisher};
 use log::{debug, warn};
 use rumqttc::{AsyncClient, ConnectionError, EventLoop, MqttOptions, QoS};
+use tokio::sync::Mutex;
 
 pub struct MqttPublisher {
     cfg: MqttStreamConfig,
     client: AsyncClient,
-    connection: EventLoop,
+    connection: Arc<Mutex<EventLoop>>,
 }
 
 #[async_trait::async_trait]
@@ -21,7 +23,7 @@ impl Publisher for MqttPublisher {
                 Ok(MqttPublisher {
                     cfg: cfg.clone(),
                     client,
-                    connection,
+                    connection: Arc::new(Mutex::new(connection)),
                 })
             }
             _ => Err(Error::IncorrectConfig),
@@ -41,7 +43,7 @@ impl Publisher for MqttPublisher {
 
     async fn reconnect(&mut self) -> Result<()> {
         debug!("Polling connection");
-        if self.connection.poll().await.is_ok() {
+        if self.connection.lock().await.poll().await.is_ok() {
             return Ok(());
         }
 
@@ -54,7 +56,7 @@ impl Publisher for MqttPublisher {
         }
 
         self.client = client;
-        self.connection = connection;
+        self.connection = Arc::new(Mutex::new(connection));
 
         let qos = qos(self.cfg.qos);
         for topic in &self.cfg.topics {
