@@ -115,9 +115,6 @@ impl Publisher for DemiaPublisher {
             debug!("Sending Streams Subscription message");
             let subscription = self.user.subscribe().await?;
 
-            #[cfg(feature = "did-streams")]
-            let id_type = 1;
-            #[cfg(not(feature = "did-streams"))]
             let id_type = 0;
 
             let body = SubscriptionRequest {
