@@ -1,7 +1,7 @@
-use serde::{Serialize, Deserialize};
-use crate::config::{HashInfo, SignatureInfo, StreamInfo};
 use crate::annotations::constants::AnnotationType;
-
+use crate::config::{HashInfo, SignatureInfo, StreamInfo};
+use alvarium_annotator::constants::LayerType;
+use serde::{Deserialize, Serialize};
 
 fn level_info() -> String {
     "info".to_string()
@@ -16,6 +16,7 @@ pub struct SdkInfo {
     pub hash: HashInfo,
     pub signature: SignatureInfo,
     pub stream: StreamInfo,
+    pub layer: LayerType,
     #[serde(default)]
     pub logging: LoggingConfiguration,
 }

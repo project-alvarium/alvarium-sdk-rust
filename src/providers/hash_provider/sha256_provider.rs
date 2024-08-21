@@ -18,35 +18,34 @@ impl HashProvider for Sha256Provider {
     }
 }
 
-
 #[test]
 fn sha256_provider_test() {
     use log::info;
     struct Case<'a> {
         name: &'a str,
-        data: &'a[u8],
+        data: &'a [u8],
         expected: &'a str,
     }
 
     let cases: Vec<Case> = vec![
         Case {
-            name:     "text variation 1",
-            data:     "foo".as_bytes(),
+            name: "text variation 1",
+            data: "foo".as_bytes(),
             expected: "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
         },
         Case {
-            name:     "text variation 2",
-            data:     "bar".as_bytes(),
+            name: "text variation 2",
+            data: "bar".as_bytes(),
             expected: "fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9",
         },
         Case {
-            name:     "text variation 3",
-            data:     "baz".as_bytes(),
+            name: "text variation 3",
+            data: "baz".as_bytes(),
             expected: "baa5a0964d3320fbc0c6a922140453c8513ea24ab8fd0577034804a967248096",
         },
         Case {
-            name:     "byte sequence",
-            data:     &[1_u8, 2, 3, 4, 5, 6, 7, 8, 9, 0],
+            name: "byte sequence",
+            data: &[1_u8, 2, 3, 4, 5, 6, 7, 8, 9, 0],
             expected: "9a89c68c4c5e28b8c4a5567673d462fff515db46116f9900624d09c474f593fb",
         },
     ];

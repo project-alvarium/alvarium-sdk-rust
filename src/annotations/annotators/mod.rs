@@ -9,7 +9,6 @@ pub use source::*;
 pub use tls::*;
 pub use tpm::*;
 
-
 #[test]
 fn unknown_annotator_failure() {
     let ann_type = alvarium_annotator::constants::AnnotationType::try_from("unknown");

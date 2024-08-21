@@ -1,23 +1,25 @@
 use crate::config::{DemiaStreamsConfig, StreamConfig, StreamInfo};
+use crate::errors::{Error, Result};
 use alvarium_annotator::{MessageWrapper, Publisher};
-use streams::{Address, User, transport::utangle::Client, id::{Ed25519, Identifier}, Message};
 use core::str::FromStr;
-use std::thread::sleep;
-use std::time::Duration;
-use serde::{Serialize, Deserialize};
 use futures::TryStreamExt;
 use log::{debug, info};
-use crate::errors::{Error, Result};
+use serde::{Deserialize, Serialize};
+use std::thread::sleep;
+use std::time::Duration;
+use streams::{
+    id::{Ed25519, Identifier},
+    transport::utangle::Client,
+    Address, Message, User,
+};
 
 const MAX_RETRIES: u8 = 100;
-
 
 pub struct DemiaPublisher {
     cfg: DemiaStreamsConfig,
     user: User<Client>,
     identifier: Identifier,
 }
-
 
 impl DemiaPublisher {
     pub(crate) async fn await_keyload(&mut self) -> Result<()> {
@@ -31,7 +33,7 @@ impl DemiaPublisher {
                     if let Some(keyload) = message.as_keyload() {
                         debug!("Found keyload");
                         if keyload.includes_subscriber(&self.identifier) {
-                            return Ok(())
+                            return Ok(());
                         }
                     }
                 }
@@ -63,14 +65,12 @@ impl Publisher for DemiaPublisher {
                     Ok(user_bytes) => {
                         let user = User::restore(user_bytes, &cfg.backup.password, client).await?;
                         let identifier = user.identifier().unwrap().clone();
-                        Ok(
-                            DemiaPublisher {
-                                cfg: cfg.clone(),
-                                user,
-                                identifier
-                            }
-                        )
-                    },
+                        Ok(DemiaPublisher {
+                            cfg: cfg.clone(),
+                            user,
+                            identifier,
+                        })
+                    }
                     Err(_) => {
                         let mut seed = [0u8; 64];
                         crypto::utils::rand::fill(&mut seed).unwrap();
@@ -82,17 +82,15 @@ impl Publisher for DemiaPublisher {
                             .build();
 
                         let identifier = user.identifier().unwrap().clone();
-                        Ok(
-                            DemiaPublisher {
-                                cfg: cfg.clone(),
-                                user,
-                                identifier,
-                            }
-                        )
+                        Ok(DemiaPublisher {
+                            cfg: cfg.clone(),
+                            user,
+                            identifier,
+                        })
                     }
                 }
-            },
-            _ => Err(Error::IncorrectConfig)
+            }
+            _ => Err(Error::IncorrectConfig),
         }
     }
 
@@ -118,9 +116,9 @@ impl Publisher for DemiaPublisher {
             let subscription = self.user.subscribe().await?;
 
             #[cfg(feature = "did-streams")]
-                let id_type = 1;
+            let id_type = 1;
             #[cfg(not(feature = "did-streams"))]
-                let id_type = 0;
+            let id_type = 0;
 
             let body = SubscriptionRequest {
                 address: subscription.address().to_string(),
@@ -142,7 +140,9 @@ impl Publisher for DemiaPublisher {
         debug!("Publishing message: {:?}", msg);
         let bytes = serde_json::to_vec(&msg)?;
 
-        let packet = self.user.message()
+        let packet = self
+            .user
+            .message()
             .with_payload(bytes)
             .with_topic(self.cfg.topic.as_str())
             .signed()
@@ -159,12 +159,13 @@ impl Publisher for DemiaPublisher {
 async fn get_announcement_id(uri: &str) -> Result<String> {
     #[derive(Serialize, Deserialize)]
     struct AnnouncementResponse {
-        announcement_id: String
+        announcement_id: String,
     }
 
     info!("Fetching stream announcement id");
     let client = reqwest::Client::new();
-    let response = client.get(uri.to_owned() + "/get_announcement_id")
+    let response = client
+        .get(uri.to_owned() + "/get_announcement_id")
         .send()
         .await?
         .bytes()
@@ -174,12 +175,11 @@ async fn get_announcement_id(uri: &str) -> Result<String> {
     Ok(announcement.announcement_id)
 }
 
-
 #[derive(Serialize, Deserialize)]
 struct SubscriptionRequest {
     address: String,
     identifier: String,
-    #[serde(rename="idType")]
+    #[serde(rename = "idType")]
     id_type: u8,
     topic: String,
 }
@@ -193,17 +193,15 @@ async fn send_subscription_request(uri: &str, body: Vec<u8>) -> Result<()> {
     Ok(())
 }
 
-
-
 #[cfg(test)]
 mod demia_test {
-    use log::info;
+    use super::{Client, DemiaPublisher, Ed25519, MessageWrapper, Publisher, User};
     use crate::{
         annotations::{AnnotationList, Annotator, PkiAnnotator},
-        config::{SdkInfo, StreamConfig, Signable}
+        config::{SdkInfo, Signable, StreamConfig},
     };
+    use log::info;
     use streams::id::{PermissionDuration, Permissioned};
-    use super::{Client, DemiaPublisher, Ed25519, Publisher, MessageWrapper, User};
     const BASE_TOPIC: &'static str = "Base Topic";
 
     #[tokio::test]
@@ -218,15 +216,15 @@ mod demia_test {
         let mut publisher = mock_provider(sdk_info.clone()).await;
 
         let raw_data_msg = "A packet to send to subscribers".to_string();
-        let sig = hex::encode([0u8; crypto::signatures::ed25519::SIGNATURE_LENGTH]);
+        let sig = hex::encode([0u8; crypto::signatures::ed25519::Signature::LENGTH]);
         let signable = Signable::new(raw_data_msg, sig);
 
         let mut list = AnnotationList { items: vec![] };
         let mut pki_annotator = PkiAnnotator::new(&sdk_info).unwrap();
         list.items.push(
-            pki_annotator.annotate(
-                &serde_json::to_vec(&signable).unwrap()
-            ).unwrap()
+            pki_annotator
+                .execute(&serde_json::to_vec(&signable).unwrap())
+                .unwrap(),
         );
 
         let data = MessageWrapper {
@@ -275,28 +273,39 @@ mod demia_test {
 
             // Annotator will receive the announcement and send a subscription, in connect() it would
             // send a subscription request to the oracle, for now we assume permission for connection
-            annotator.client().receive_message(announcement.address()).await.unwrap();
+            annotator
+                .client()
+                .receive_message(announcement.address())
+                .await
+                .unwrap();
             let sub_message = annotator.client().subscribe().await.unwrap();
 
             // Streams author accepts the subscription and dedicates a new branch specifically for
             // the annotator
-            streams_author.receive_message(sub_message.address()).await.unwrap();
-            streams_author.new_branch(BASE_TOPIC, config.topic.as_str()).await.unwrap();
-            streams_author.send_keyload(
-                config.topic.as_str(),
-                vec![Permissioned::ReadWrite(annotator.identifier().clone(), PermissionDuration::Perpetual)],
-                vec![]
-            )
+            streams_author
+                .receive_message(sub_message.address())
+                .await
+                .unwrap();
+            streams_author
+                .new_branch(BASE_TOPIC, config.topic.as_str())
+                .await
+                .unwrap();
+            streams_author
+                .send_keyload(
+                    config.topic.as_str(),
+                    vec![Permissioned::ReadWrite(
+                        annotator.identifier().clone(),
+                        PermissionDuration::Perpetual,
+                    )],
+                    vec![],
+                )
                 .await
                 .unwrap();
 
             annotator.await_keyload().await.unwrap();
-            return annotator
+            return annotator;
         } else {
             panic!("Test configuration is not correct, should be demiaStreams config")
         }
     }
 }
-
-
-

@@ -5,18 +5,17 @@ use alvarium_annotator::{SignProvider, StreamConfigWrapper};
 pub use demia_streams::*;
 pub use mqtt::*;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::annotations::constants::StreamType;
-use crate::providers::sign_provider::SignatureProviderWrap;
 use crate::errors::{Error, Result};
-
+use crate::providers::sign_provider::SignatureProviderWrap;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StreamInfo {
-    #[serde(rename="type")]
+    #[serde(rename = "type")]
     pub stream_type: StreamType,
-    pub config: StreamConfig
+    pub config: StreamConfig,
 }
 
 impl StreamConfigWrapper for StreamInfo {
@@ -29,7 +28,7 @@ impl StreamConfigWrapper for StreamInfo {
 pub struct UrlInfo {
     pub host: String,
     pub port: usize,
-    pub protocol: String
+    pub protocol: String,
 }
 
 impl UrlInfo {
@@ -45,11 +44,10 @@ pub enum StreamConfig {
     MQTT(MqttStreamConfig),
 }
 
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Signable {
     pub seed: String,
-    pub signature: String
+    pub signature: String,
 }
 
 impl Signable {
@@ -59,11 +57,11 @@ impl Signable {
 
     pub fn verify_signature(&self, provider: &SignatureProviderWrap) -> Result<bool> {
         if self.signature.is_empty() {
-            return Err(Error::EmptySignature)
+            return Err(Error::EmptySignature);
         }
 
         match provider {
-            SignatureProviderWrap::Ed25519(provider)=> {
+            SignatureProviderWrap::Ed25519(provider) => {
                 let sig_bytes = hex::decode(&self.signature)?;
                 Ok(provider.verify(self.seed.as_bytes(), &sig_bytes)?)
             }
@@ -77,26 +75,27 @@ impl Signable {
     }
 }
 
-
 #[cfg(test)]
 mod config_tests {
-    use crypto::signatures::ed25519::SecretKey;
-    use crate::providers::sign_provider::{Ed25519Provider, SignatureProviderWrap};
-    use crate::config;
     use super::Signable;
+    use crate::config;
+    use crate::providers::sign_provider::{Ed25519Provider, SignatureProviderWrap};
     use alvarium_annotator::SignProvider;
+    use crypto::signatures::ed25519::SecretKey;
 
     #[tokio::test]
     async fn verify_signable() {
-        let config: config::SdkInfo = serde_json::from_slice(crate::CONFIG_BYTES.as_slice()).unwrap();
-        let sig_provider = SignatureProviderWrap::Ed25519(Ed25519Provider::new(&config.signature).unwrap());
+        let config: config::SdkInfo =
+            serde_json::from_slice(crate::CONFIG_BYTES.as_slice()).unwrap();
+        let sig_provider =
+            SignatureProviderWrap::Ed25519(Ed25519Provider::new(&config.signature).unwrap());
 
         let data = "A data packet to sign".to_string();
         let sig = sig_provider.sign(data.as_bytes()).unwrap();
 
         let signable = Signable {
             seed: data,
-            signature: sig
+            signature: sig,
         };
 
         assert!(signable.verify_signature(&sig_provider).unwrap())
@@ -104,7 +103,8 @@ mod config_tests {
 
     #[test]
     fn failed_verification_signable() {
-        let config: config::SdkInfo = serde_json::from_slice(crate::CONFIG_BYTES.as_slice()).unwrap();
+        let config: config::SdkInfo =
+            serde_json::from_slice(crate::CONFIG_BYTES.as_slice()).unwrap();
         let bad_priv_key = SecretKey::generate().unwrap();
 
         let data = "A data packet to sign".to_string();
@@ -112,10 +112,11 @@ mod config_tests {
 
         let signable = Signable {
             seed: data,
-            signature: hex::encode(raw_sig.to_bytes())
+            signature: hex::encode(raw_sig.to_bytes()),
         };
 
-        let sig_provider = SignatureProviderWrap::Ed25519(Ed25519Provider::new(&config.signature).unwrap());
+        let sig_provider =
+            SignatureProviderWrap::Ed25519(Ed25519Provider::new(&config.signature).unwrap());
 
         assert!(!signable.verify_signature(&sig_provider).unwrap())
     }

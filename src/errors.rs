@@ -61,7 +61,7 @@ pub enum Error {
     External(Box<dyn std::error::Error + Send + Sync>),
 
     #[error("Backup failed: {0}")]
-    BackupFailed(std::io::Error)
+    BackupFailed(std::io::Error),
 }
 
 impl From<serde_json::Error> for Error {
@@ -87,7 +87,6 @@ impl From<streams::Error> for Error {
         Error::StreamsError(e)
     }
 }
-
 
 impl From<rumqttc::ClientError> for Error {
     fn from(e: rumqttc::ClientError) -> Self {

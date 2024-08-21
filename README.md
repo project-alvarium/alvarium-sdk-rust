@@ -140,7 +140,7 @@ impl ThresholdAnnotator {
 /// Implementation of the annotate() function for generating a threshold Annotation
 impl Annotator for ThresholdAnnotator {
     type Error = alvarium_rust_sdk::errors::Error;
-    fn annotate(&mut self, data: `&[u8]`) -> alvarium_rust_sdk::errors::Result<Annotation> {
+    fn execute(&mut self, data: `&[u8]`) -> alvarium_rust_sdk::errors::Result<Annotation> {
         let hasher = new_hash_provider(&self.hash)?;
         let signable: Signable = serde_json::from_slice(data)?;
         let key = derive_hash(hasher, signable.seed.as_bytes());

@@ -1,7 +1,7 @@
 {
   "annotators": [
     "pki",
-    "source",
+    "src",
     "tls"
   ],
   "hash": {
@@ -41,5 +41,6 @@
   "logging": {
     "level": "info",
     "debug_output": "output.log"
-  }
+  },
+  "layer": "app"
 }

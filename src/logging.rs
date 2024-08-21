@@ -1,8 +1,8 @@
 // src/logger/mod.rs
 
 use crate::config::SdkInfo;
+use crate::errors::{Error, Result};
 use log::LevelFilter;
-use crate::errors::{Result, Error};
 
 pub fn init(config: &SdkInfo) -> Result<()> {
     let log_level = match config.logging.level.as_str() {
@@ -14,7 +14,6 @@ pub fn init(config: &SdkInfo) -> Result<()> {
 
     fern::Dispatch::new()
         .format(|out, message, record| {
-
             let source = format!("{}:{}", record.target(), record.line().unwrap_or_default());
             let gap = if source.len() < 35 {
                 " ".repeat(35 - source.len())
