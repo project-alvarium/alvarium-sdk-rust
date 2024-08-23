@@ -56,7 +56,7 @@ impl DemiaPublisher {
                     user,
                     identifier,
                 })
-            },
+            }
             None => Err(Error::StreamsNoIdentity),
         }
     }
@@ -293,18 +293,19 @@ mod demia_test {
         info!("Publishing...");
         publisher.publish(data).await.unwrap();
 
-
         let user = User::restore(
             std::fs::read("temp_file").unwrap(),
-            "password", Client::new("http://localhost:8080")
-        ).await.unwrap();
+            "password",
+            Client::new("http://localhost:8080"),
+        )
+        .await
+        .unwrap();
 
         let restored = DemiaPublisher::new_with_user(&sdk_info.stream, user).unwrap();
 
         assert!(restored.identifier.eq(publisher.identifier()));
         std::fs::remove_file("temp_file").unwrap();
     }
-
 
     async fn mock_provider(sdk_info: SdkInfo) -> DemiaPublisher {
         if let StreamConfig::DemiaStreams(config) = &sdk_info.stream.config {
