@@ -36,6 +36,9 @@ pub enum Error {
     #[error("Mqtt Connect Return error: {0}")]
     MqttConnectReturnError(String),
 
+    #[error("No Identity present in the user")]
+    StreamsNoIdentity,
+
     #[error("Did not find keyload, subscription may not have been processed correctly")]
     StreamsKeyloadNotFound,
 

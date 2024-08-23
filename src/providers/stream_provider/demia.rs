@@ -44,6 +44,23 @@ impl DemiaPublisher {
         Err(Error::StreamsKeyloadNotFound)
     }
 
+    pub fn new_with_user(cfg: &StreamInfo, user: User<Client>) -> Result<DemiaPublisher> {
+        match user.identifier() {
+            Some(identifier) => {
+                let identifier = identifier.clone();
+                Ok(DemiaPublisher {
+                    cfg: match &cfg.config {
+                        StreamConfig::DemiaStreams(cfg) => cfg.clone(),
+                        _ => return Err(Error::IncorrectConfig),
+                    },
+                    user,
+                    identifier,
+                })
+            },
+            None => Err(Error::StreamsNoIdentity),
+        }
+    }
+
     pub fn client(&mut self) -> &mut User<Client> {
         &mut self.user
     }
@@ -249,6 +266,45 @@ mod demia_test {
             std::fs::remove_file("temp_file").unwrap();
         }
     }
+
+    #[tokio::test]
+    async fn new_publisher_from_user() {
+        let sdk_info: SdkInfo = serde_json::from_slice(crate::CONFIG_BYTES.as_slice()).unwrap();
+        let mut publisher = mock_provider(sdk_info.clone()).await;
+
+        let raw_data_msg = "A packet to send to subscribers".to_string();
+        let sig = hex::encode([0u8; crypto::signatures::ed25519::Signature::LENGTH]);
+        let signable = Signable::new(raw_data_msg, sig);
+
+        let mut list = AnnotationList { items: vec![] };
+        let mut pki_annotator = PkiAnnotator::new(&sdk_info).unwrap();
+        list.items.push(
+            pki_annotator
+                .execute(&serde_json::to_vec(&signable).unwrap())
+                .unwrap(),
+        );
+
+        let data = MessageWrapper {
+            action: crate::annotations::constants::ACTION_CREATE.clone(),
+            message_type: std::any::type_name::<AnnotationList>(),
+            content: &base64::encode(&serde_json::to_vec(&list).unwrap()),
+        };
+
+        info!("Publishing...");
+        publisher.publish(data).await.unwrap();
+
+
+        let user = User::restore(
+            std::fs::read("temp_file").unwrap(),
+            "password", Client::new("http://localhost:8080")
+        ).await.unwrap();
+
+        let restored = DemiaPublisher::new_with_user(&sdk_info.stream, user).unwrap();
+
+        assert!(restored.identifier.eq(publisher.identifier()));
+        std::fs::remove_file("temp_file").unwrap();
+    }
+
 
     async fn mock_provider(sdk_info: SdkInfo) -> DemiaPublisher {
         if let StreamConfig::DemiaStreams(config) = &sdk_info.stream.config {
