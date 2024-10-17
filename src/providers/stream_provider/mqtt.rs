@@ -1,9 +1,9 @@
-use std::sync::Arc;
 use crate::config::{MqttStreamConfig, StreamConfig, StreamInfo};
 use crate::errors::{Error, Result};
 use alvarium_annotator::{MessageWrapper, Publisher};
 use log::{debug, warn};
 use rumqttc::{AsyncClient, ConnectionError, EventLoop, MqttOptions, QoS};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 pub struct MqttPublisher {
