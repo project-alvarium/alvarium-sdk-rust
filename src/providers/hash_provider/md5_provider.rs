@@ -10,8 +10,9 @@ impl MD5Provider {
     }
 }
 
+#[async_trait::async_trait]
 impl HashProvider for MD5Provider {
-    fn derive(&self, data: &[u8]) -> String {
+    async fn derive(&self, data: &[u8]) -> String {
         let mut ctx = Context::new();
         ctx.read(data);
         hex::encode(ctx.finish())

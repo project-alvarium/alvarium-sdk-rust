@@ -9,8 +9,9 @@ impl NoneProvider {
     }
 }
 
+#[async_trait::async_trait]
 impl HashProvider for NoneProvider {
-    fn derive(&self, data: &[u8]) -> String {
+    async fn derive(&self, data: &[u8]) -> String {
         unsafe { String::from_utf8_unchecked(data.to_vec()) }
     }
 }

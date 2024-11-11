@@ -55,7 +55,7 @@ impl Signable {
         Signable { seed, signature }
     }
 
-    pub fn verify_signature(&self, provider: &SignatureProviderWrap) -> Result<bool> {
+    pub async fn verify_signature(&self, provider: &SignatureProviderWrap) -> Result<bool> {
         if self.signature.is_empty() {
             return Err(Error::EmptySignature);
         }
@@ -63,7 +63,7 @@ impl Signable {
         match provider {
             SignatureProviderWrap::Ed25519(provider) => {
                 let sig_bytes = hex::decode(&self.signature)?;
-                Ok(provider.verify(self.seed.as_bytes(), &sig_bytes)?)
+                Ok(provider.verify(self.seed.as_bytes(), &sig_bytes).await?)
             }
         }
     }

@@ -10,8 +10,9 @@ impl Sha256Provider {
     }
 }
 
+#[async_trait::async_trait]
 impl HashProvider for Sha256Provider {
-    fn derive(&self, data: &[u8]) -> String {
+    async fn derive(&self, data: &[u8]) -> String {
         let mut digest = [0_u8; SHA256_LEN];
         SHA256(data, &mut digest);
         hex::encode(digest)

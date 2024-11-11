@@ -62,15 +62,16 @@ impl TpmAnnotator {
     }
 }
 
+#[async_trait::async_trait]
 impl Annotator for TpmAnnotator {
     type Error = crate::errors::Error;
-    fn execute(&mut self, data: &[u8]) -> Result<Annotation> {
+    async fn execute(&mut self, data: &[u8]) -> Result<Annotation> {
         let hasher = new_hash_provider(&self.hash)?;
         let signable: std::result::Result<Signable, serde_json::Error> =
             serde_json::from_slice(data);
         let key = match signable {
-            Ok(signable) => derive_hash(hasher, signable.seed.as_bytes()),
-            Err(_) => derive_hash(hasher, data),
+            Ok(signable) => derive_hash(hasher, signable.seed.as_bytes()).await,
+            Err(_) => derive_hash(hasher, data).await,
         };
         match gethostname::gethostname().to_str() {
             Some(host) => {
@@ -89,7 +90,7 @@ impl Annotator for TpmAnnotator {
                     None,
                 );
                 annotation.set_tag(self.tag_manager.get_tag());
-                let signature = serialise_and_sign(&self.sign, &annotation)?;
+                let signature = serialise_and_sign(&self.sign, &annotation).await?;
                 annotation.with_signature(&signature);
                 Ok(annotation)
             }
@@ -106,8 +107,8 @@ mod tpm_tests {
     use crate::config::Signable;
     use crate::{config, providers::sign_provider::get_priv_key};
 
-    #[test]
-    fn valid_and_invalid_tpm_annotator() {
+    #[tokio::test]
+    async fn valid_and_invalid_tpm_annotator() {
         let config: config::SdkInfo =
             serde_json::from_slice(crate::CONFIG_BYTES.as_slice()).unwrap();
 
@@ -123,15 +124,15 @@ mod tpm_tests {
         let mut tpm_annotator_1 = TpmAnnotator::new(&config).unwrap();
         let mut tpm_annotator_2 = TpmAnnotator::new(&config2).unwrap();
 
-        let valid_annotation = tpm_annotator_1.execute(&serialised).unwrap();
-        let invalid_annotation = tpm_annotator_2.execute(&serialised);
+        let valid_annotation = tpm_annotator_1.execute(&serialised).await.unwrap();
+        let invalid_annotation = tpm_annotator_2.execute(&serialised).await;
 
         assert!(valid_annotation.validate_base());
         assert!(invalid_annotation.is_err());
     }
 
-    #[test]
-    fn make_tpm_annotation() {
+    #[tokio::test]
+    async fn make_tpm_annotation() {
         let config: config::SdkInfo =
             serde_json::from_slice(crate::CONFIG_BYTES.as_slice()).unwrap();
 
@@ -145,7 +146,7 @@ mod tpm_tests {
         let serialised = serde_json::to_vec(&signable).unwrap();
 
         let mut tpm_annotator = TpmAnnotator::new(&config).unwrap();
-        let annotation = tpm_annotator.execute(&serialised).unwrap();
+        let annotation = tpm_annotator.execute(&serialised).await.unwrap();
 
         assert!(annotation.validate_base());
         assert_eq!(annotation.kind, *constants::ANNOTATION_TPM);

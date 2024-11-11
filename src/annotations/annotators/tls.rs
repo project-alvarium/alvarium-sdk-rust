@@ -142,15 +142,16 @@ impl Tls for TlsAnnotator {
 }
 
 // Create a TLS Server Connection instance to determine if it is being used
+#[async_trait::async_trait]
 impl Annotator for TlsAnnotator {
     type Error = crate::errors::Error;
-    fn execute(&mut self, data: &[u8]) -> Result<Annotation> {
+    async fn execute(&mut self, data: &[u8]) -> Result<Annotation> {
         let hasher = new_hash_provider(&self.hash)?;
         let signable: std::result::Result<Signable, serde_json::Error> =
             serde_json::from_slice(data);
         let key = match signable {
-            Ok(signable) => derive_hash(hasher, signable.seed.as_bytes()),
-            Err(_) => derive_hash(hasher, data),
+            Ok(signable) => derive_hash(hasher, signable.seed.as_bytes()).await,
+            Err(_) => derive_hash(hasher, data).await,
         };
         match gethostname::gethostname().to_str() {
             Some(host) => {
@@ -169,7 +170,7 @@ impl Annotator for TlsAnnotator {
                     None,
                 );
                 annotation.set_tag(self.tag_manager.get_tag());
-                let signature = serialise_and_sign(&self.sign, &annotation)?;
+                let signature = serialise_and_sign(&self.sign, &annotation).await?;
                 annotation.with_signature(&signature);
                 Ok(annotation)
             }
@@ -189,8 +190,8 @@ mod tls_tests {
     use std::net::TcpStream;
     use std::sync::Arc;
 
-    #[test]
-    fn valid_and_invalid_tls_annotator() {
+    #[tokio::test]
+    async fn valid_and_invalid_tls_annotator() {
         let config: config::SdkInfo =
             serde_json::from_slice(crate::CONFIG_BYTES.as_slice()).unwrap();
 
@@ -206,16 +207,16 @@ mod tls_tests {
         let mut tls_annotator_1 = TlsAnnotator::new(&config).unwrap();
         let mut tls_annotator_2 = TlsAnnotator::new(&config2).unwrap();
 
-        let valid_annotation = tls_annotator_1.execute(&serialised).unwrap();
-        let invalid_annotation = tls_annotator_2.execute(&serialised);
+        let valid_annotation = tls_annotator_1.execute(&serialised).await.unwrap();
+        let invalid_annotation = tls_annotator_2.execute(&serialised).await;
 
         assert!(valid_annotation.validate_base());
         assert!(invalid_annotation.is_err());
     }
 
     #[cfg(feature = "rustls")]
-    #[test]
-    fn make_tls_annotation() {
+    #[tokio::test]
+    async fn make_tls_annotation() {
         let config: config::SdkInfo =
             serde_json::from_slice(crate::CONFIG_BYTES.as_slice()).unwrap();
 
@@ -234,7 +235,7 @@ mod tls_tests {
         let tcp_stream = TcpStream::connect("www.google.com:443").unwrap();
         tls_annotator.set_connection_rustls(conn.into(), tcp_stream);
 
-        let annotation = tls_annotator.execute(&serialised).unwrap();
+        let annotation = tls_annotator.execute(&serialised).await.unwrap();
 
         assert!(annotation.validate_base());
         assert_eq!(annotation.kind, *constants::ANNOTATION_TLS);
@@ -246,8 +247,8 @@ mod tls_tests {
         assert!(annotation.is_satisfied)
     }
 
-    #[test]
-    fn unsatisfied_tls_annotation() {
+    #[tokio::test]
+    async fn unsatisfied_tls_annotation() {
         let config: config::SdkInfo =
             serde_json::from_slice(crate::CONFIG_BYTES.as_slice()).unwrap();
 
@@ -258,7 +259,7 @@ mod tls_tests {
         let serialised = serde_json::to_vec(&signable).unwrap();
 
         let mut tls_annotator = TlsAnnotator::new(&config).unwrap();
-        let annotation = tls_annotator.execute(&serialised).unwrap();
+        let annotation = tls_annotator.execute(&serialised).await.unwrap();
 
         assert!(annotation.validate_base());
         assert_eq!(annotation.kind, *constants::ANNOTATION_TLS);
