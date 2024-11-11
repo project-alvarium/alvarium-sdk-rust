@@ -19,7 +19,7 @@ md5-rs = "0.1.5"
 hex = "0.4.3"
 base64 = "0.13.0"
 
-alvarium-annotator = { path = "../alvarium-annotator" }
+alvarium-annotator = { git = "https://github.com/project-alvarium/alvarium-annotator", branch = "main" }
 streams = { git = "https://github.com/demia-protocol/demia-sdk", branch = "develop", default-features = false, features = ["utangle-client", "did"] }
 iota-crypto = {version = "0.23.2", default-features = false, features = ["ed25519", "sha", "random"]}
 
