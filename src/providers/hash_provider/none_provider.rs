@@ -16,8 +16,8 @@ impl HashProvider for NoneProvider {
     }
 }
 
-#[test]
-fn md5_provider_test() {
+#[tokio::test]
+async fn md5_provider_test() {
     use log::info;
     struct Case<'a> {
         name: &'a str,
@@ -46,7 +46,7 @@ fn md5_provider_test() {
     for case in cases {
         info!("Testing Case: {}", case.name);
         let hash_provider = NoneProvider::new();
-        let hash = hash_provider.derive(case.data);
+        let hash = hash_provider.derive(case.data).await;
         assert_eq!(case.expected, hash)
     }
 }

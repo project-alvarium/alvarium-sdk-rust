@@ -19,8 +19,8 @@ impl HashProvider for Sha256Provider {
     }
 }
 
-#[test]
-fn sha256_provider_test() {
+#[tokio::test]
+async fn sha256_provider_test() {
     use log::info;
     struct Case<'a> {
         name: &'a str,
@@ -54,7 +54,7 @@ fn sha256_provider_test() {
     for case in cases {
         info!("Testing Case: {}", case.name);
         let hash_provider = Sha256Provider::new();
-        let hash = hash_provider.derive(case.data);
+        let hash = hash_provider.derive(case.data).await;
         assert_eq!(case.expected, hash)
     }
 }
