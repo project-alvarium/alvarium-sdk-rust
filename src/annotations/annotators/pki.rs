@@ -3,7 +3,7 @@ use crate::config::{self, Signable};
 use crate::errors::{Error, Result};
 use crate::factories::{new_hash_provider, new_signature_provider};
 use crate::managers::tag_manager::TagManager;
-use crate::providers::sign_provider::SignatureProviderWrap;
+use crate::providers::sign_provider::{CustomSignatureProvider, SignatureProviderWrap};
 use alvarium_annotator::constants::LayerType;
 use alvarium_annotator::{derive_hash, serialise_and_sign};
 
@@ -21,6 +21,19 @@ impl PkiAnnotator {
             hash: cfg.hash.hash_type.clone(),
             kind: constants::ANNOTATION_PKI.clone(),
             sign: new_signature_provider(&cfg.signature)?,
+            layer: cfg.layer.clone(),
+            tag_manager: TagManager::new(cfg.layer.clone()),
+        })
+    }
+
+    pub fn new_with_provider(
+        cfg: &config::SdkInfo,
+        sign_provider: CustomSignatureProvider,
+    ) -> Result<impl Annotator<Error = Error>> {
+        Ok(PkiAnnotator {
+            hash: cfg.hash.hash_type.clone(),
+            kind: constants::ANNOTATION_PKI.clone(),
+            sign: SignatureProviderWrap::Custom(sign_provider),
             layer: cfg.layer.clone(),
             tag_manager: TagManager::new(cfg.layer.clone()),
         })

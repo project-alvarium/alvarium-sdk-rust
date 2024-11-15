@@ -4,7 +4,7 @@ use crate::config::Signable;
 use crate::errors::{Error, Result};
 use crate::factories::{new_hash_provider, new_signature_provider};
 use crate::managers::tag_manager::TagManager;
-use crate::providers::sign_provider::SignatureProviderWrap;
+use crate::providers::sign_provider::{CustomSignatureProvider, SignatureProviderWrap};
 use alvarium_annotator::constants::LayerType;
 use alvarium_annotator::{derive_hash, serialise_and_sign};
 
@@ -26,6 +26,32 @@ impl SourceAnnotator {
             tag_manager: TagManager::new(cfg.layer.clone()),
         })
     }
+
+    pub fn new_with_provider(
+        cfg: &config::SdkInfo,
+        sign_provider: CustomSignatureProvider,
+    ) -> Result<impl Annotator<Error = Error>> {
+        Ok(SourceAnnotator {
+            hash: cfg.hash.hash_type.clone(),
+            kind: constants::ANNOTATION_SOURCE.clone(),
+            sign: SignatureProviderWrap::Custom(sign_provider),
+            layer: cfg.layer.clone(),
+            tag_manager: TagManager::new(cfg.layer.clone()),
+        })
+    }
+}
+
+pub fn new_with_provider(
+    cfg: &config::SdkInfo,
+    sign_provider: CustomSignatureProvider,
+) -> Result<impl Annotator<Error = Error>> {
+    Ok(SourceAnnotator {
+        hash: cfg.hash.hash_type.clone(),
+        kind: constants::ANNOTATION_SOURCE.clone(),
+        sign: SignatureProviderWrap::Custom(sign_provider),
+        layer: cfg.layer.clone(),
+        tag_manager: TagManager::new(cfg.layer.clone()),
+    })
 }
 
 #[async_trait::async_trait]

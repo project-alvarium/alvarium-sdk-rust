@@ -7,7 +7,7 @@ use alvarium_annotator::{derive_hash, serialise_and_sign};
 
 use crate::config::Signable;
 use crate::factories::{new_hash_provider, new_signature_provider};
-use crate::providers::sign_provider::SignatureProviderWrap;
+use crate::providers::sign_provider::{CustomSignatureProvider, SignatureProviderWrap};
 #[cfg(unix)]
 use std::os::linux::fs::MetadataExt;
 #[cfg(windows)]
@@ -29,6 +29,19 @@ impl TpmAnnotator {
             hash: cfg.hash.hash_type.clone(),
             kind: constants::ANNOTATION_TPM.clone(),
             sign: new_signature_provider(&cfg.signature)?,
+            layer: cfg.layer.clone(),
+            tag_manager: TagManager::new(cfg.layer.clone()),
+        })
+    }
+
+    pub fn new_with_provider(
+        cfg: &config::SdkInfo,
+        sign_provider: CustomSignatureProvider,
+    ) -> Result<impl Annotator<Error = Error>> {
+        Ok(TpmAnnotator {
+            hash: cfg.hash.hash_type.clone(),
+            kind: constants::ANNOTATION_TPM.clone(),
+            sign: SignatureProviderWrap::Custom(sign_provider),
             layer: cfg.layer.clone(),
             tag_manager: TagManager::new(cfg.layer.clone()),
         })
