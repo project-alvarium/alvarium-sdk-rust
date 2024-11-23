@@ -3,6 +3,7 @@ use crate::errors::{Error, Result};
 use alvarium_annotator::SignProvider;
 use crypto::signatures::ed25519::{PublicKey, SecretKey, Signature};
 
+#[derive(Clone)]
 pub struct Ed25519Provider {
     public: PublicKey,
     private: SecretKey,

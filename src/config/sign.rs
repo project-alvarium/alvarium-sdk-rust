@@ -20,6 +20,6 @@ pub struct KeyInfo {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StrongholdInfo {
-    pub password: KeyAlgorithm,
+    pub password: String,
     pub path: String,
 }

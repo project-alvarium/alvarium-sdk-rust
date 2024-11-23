@@ -9,7 +9,7 @@ use std::io::Read;
 
 use crate::config::Signable;
 use crate::factories::{new_hash_provider, new_signature_provider};
-use crate::providers::sign_provider::{CustomSignatureProvider, SignatureProviderWrap};
+use crate::providers::sign_provider::SignatureProviderWrap;
 use log::info;
 #[cfg(feature = "native-tls")]
 use native_tls::TlsStream;
@@ -55,12 +55,12 @@ impl TlsAnnotator {
 
     pub fn new_with_provider(
         cfg: &config::SdkInfo,
-        sign_provider: CustomSignatureProvider,
+        sign_provider: SignatureProviderWrap,
     ) -> Result<impl Annotator<Error = Error>> {
         Ok(TlsAnnotator {
             hash: cfg.hash.hash_type.clone(),
             kind: constants::ANNOTATION_TLS.clone(),
-            sign: SignatureProviderWrap::Custom(sign_provider),
+            sign: sign_provider,
             tag_manager: TagManager::new(cfg.layer.clone()),
             layer: cfg.layer.clone(),
             #[cfg(feature = "native-tls")]
