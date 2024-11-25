@@ -11,39 +11,43 @@ native-tls = ["dep:native-tls"]
 rustls = ["dep:rustls", "webpki-roots"]
 
 [dependencies]
-tokio = { version = "1.32.0", features = ["rt", "macros"] }
+tokio = { version = "1.41.1", features = ["rt", "macros"] }
 chrono = "0.4.22"
 lazy_static = "1.4.0"
 
 md5-rs = "0.1.5"
 hex = "0.4.3"
-base64 = "0.13.0"
+base64 = "0.22.1"
 
 alvarium-annotator = { git = "https://github.com/project-alvarium/alvarium-annotator", branch = "main" }
-streams = { git = "https://github.com/demia-protocol/demia-sdk", branch = "develop", default-features = false, features = ["utangle-client", "did"] }
+streams = { git = "https://github.com/demia-protocol/demia-sdk", branch = "develop", features = ["utangle-client", "did"] }
+
+# alvarium-annotator = { path = "../alvarium-annotator" }
+# streams = { path = "../demia-sdk/streams/streams", default-features = false, features = ["utangle-client", "did"] }
+
 iota-crypto = {version = "0.23.2", default-features = false, features = ["ed25519", "sha", "random"]}
 
-serde = "1.0.143"
-serde_json = "1.0.83"
-gethostname = "0.2.3"
+serde = "1.0.215"
+serde_json = "1.0.133"
+gethostname = "0.5"
 
 rand = { version = "0.8.5" }
 ulid = "1.0.0"
 
-reqwest = { version = "0.12.7", default-features = false, features = ["json", "rustls-tls"]}
-futures = {version = "0.3.8", default-features = false}
-async-trait = "0.1.57"
+reqwest = { version = "0.12.9", default-features = false, features = ["json", "rustls-tls"]}
+futures = {version = "0.3.31", default-features = false}
+async-trait = "0.1.83"
 
-rustls = { version = "0.21.2", optional = true }
-rustls-pemfile = "1.0.2"
+rustls = { version = "0.23.18", optional = true }
+rustls-pemfile = "2.2.0"
 native-tls = { version = "0.2.11", optional = true }
-webpki-roots = { version = "0.23.1", optional = true }
+webpki-roots = { version = "0.26.7", optional = true }
 
 rumqttc = "0.24.0"
 
-thiserror = "1.0.40"
+thiserror = "2.0.3"
 log = "0.4"
-fern = "0.6.2"
+fern = "0.7.0"
 
 [target.'cfg(unix)'.dependencies]
-libc = "0.2.146"
+libc = "0.2.164"

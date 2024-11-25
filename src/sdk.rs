@@ -7,7 +7,7 @@ use alvarium_annotator::constants::{
     ACTION_CREATE, ACTION_MUTATE, ACTION_PUBLISH, ACTION_TRANSIT, ANNOTATION_SOURCE,
 };
 use alvarium_annotator::{MessageWrapper, Publisher};
-
+use base64::{engine::general_purpose::STANDARD, Engine};
 pub struct SDK<'a, Pub: Publisher> {
     annotators: &'a mut [Box<SdkAnnotator>],
     pub cfg: SdkInfo,
@@ -52,7 +52,7 @@ impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error>
         let wrapper = MessageWrapper {
             action: ACTION_CREATE.clone(),
             message_type: std::any::type_name::<AnnotationList>(),
-            content: &base64::encode(ann_bytes),
+            content: &STANDARD.encode(ann_bytes),
         };
         self.stream.publish(wrapper).await
     }
@@ -72,7 +72,7 @@ impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error>
         let wrapper = MessageWrapper {
             action: ACTION_MUTATE.clone(),
             message_type: std::any::type_name::<AnnotationList>(),
-            content: &base64::encode(ann_bytes),
+            content: &STANDARD.encode(ann_bytes),
         };
         self.stream.publish(wrapper).await
     }
@@ -87,7 +87,7 @@ impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error>
         let wrapper = MessageWrapper {
             action: ACTION_TRANSIT.clone(),
             message_type: std::any::type_name::<AnnotationList>(),
-            content: &base64::encode(ann_bytes),
+            content: &STANDARD.encode(ann_bytes),
         };
         self.stream.publish(wrapper).await
     }
@@ -102,7 +102,7 @@ impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error>
         let wrapper = MessageWrapper {
             action: ACTION_PUBLISH.clone(),
             message_type: std::any::type_name::<AnnotationList>(),
-            content: &base64::encode(ann_bytes),
+            content: &STANDARD.encode(ann_bytes),
         };
         self.stream.publish(wrapper).await
     }
