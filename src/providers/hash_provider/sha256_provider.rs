@@ -10,16 +10,17 @@ impl Sha256Provider {
     }
 }
 
+#[async_trait::async_trait]
 impl HashProvider for Sha256Provider {
-    fn derive(&self, data: &[u8]) -> String {
+    async fn derive(&self, data: &[u8]) -> String {
         let mut digest = [0_u8; SHA256_LEN];
         SHA256(data, &mut digest);
         hex::encode(digest)
     }
 }
 
-#[test]
-fn sha256_provider_test() {
+#[tokio::test]
+async fn sha256_provider_test() {
     use log::info;
     struct Case<'a> {
         name: &'a str,
@@ -53,7 +54,7 @@ fn sha256_provider_test() {
     for case in cases {
         info!("Testing Case: {}", case.name);
         let hash_provider = Sha256Provider::new();
-        let hash = hash_provider.derive(case.data);
+        let hash = hash_provider.derive(case.data).await;
         assert_eq!(case.expected, hash)
     }
 }

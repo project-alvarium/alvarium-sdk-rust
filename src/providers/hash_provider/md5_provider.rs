@@ -10,16 +10,17 @@ impl MD5Provider {
     }
 }
 
+#[async_trait::async_trait]
 impl HashProvider for MD5Provider {
-    fn derive(&self, data: &[u8]) -> String {
+    async fn derive(&self, data: &[u8]) -> String {
         let mut ctx = Context::new();
         ctx.read(data);
         hex::encode(ctx.finish())
     }
 }
 
-#[test]
-fn md5_provider_test() {
+#[tokio::test]
+async fn md5_provider_test() {
     use log::info;
     struct Case<'a> {
         name: &'a str,
@@ -53,7 +54,7 @@ fn md5_provider_test() {
     let hash_provider = MD5Provider::new();
     for case in cases {
         info!("Testing Case: {}", case.name);
-        let hash = hash_provider.derive(case.data);
+        let hash = hash_provider.derive(case.data).await;
         assert_eq!(case.expected, hash)
     }
 }

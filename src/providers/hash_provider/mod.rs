@@ -12,12 +12,13 @@ pub enum HashProviderWrapper {
     None(NoneProvider),
 }
 
+#[async_trait::async_trait]
 impl alvarium_annotator::HashProvider for HashProviderWrapper {
-    fn derive(&self, data: &[u8]) -> String {
+    async fn derive(&self, data: &[u8]) -> String {
         match self {
-            HashProviderWrapper::MD5(md5) => md5.derive(data),
-            HashProviderWrapper::Sha256(sha256) => sha256.derive(data),
-            HashProviderWrapper::None(none) => none.derive(data),
+            HashProviderWrapper::MD5(md5) => md5.derive(data).await,
+            HashProviderWrapper::Sha256(sha256) => sha256.derive(data).await,
+            HashProviderWrapper::None(none) => none.derive(data).await,
         }
     }
 }

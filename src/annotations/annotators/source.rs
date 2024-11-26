@@ -26,17 +26,31 @@ impl SourceAnnotator {
             tag_manager: TagManager::new(cfg.layer.clone()),
         })
     }
+
+    pub fn new_with_provider(
+        cfg: &config::SdkInfo,
+        sign_provider: SignatureProviderWrap,
+    ) -> Result<impl Annotator<Error = Error>> {
+        Ok(SourceAnnotator {
+            hash: cfg.hash.hash_type.clone(),
+            kind: constants::ANNOTATION_SOURCE.clone(),
+            sign: sign_provider,
+            layer: cfg.layer.clone(),
+            tag_manager: TagManager::new(cfg.layer.clone()),
+        })
+    }
 }
 
+#[async_trait::async_trait]
 impl Annotator for SourceAnnotator {
     type Error = crate::errors::Error;
-    fn execute(&mut self, data: &[u8]) -> Result<Annotation> {
+    async fn execute(&mut self, data: &[u8]) -> Result<Annotation> {
         let hasher = new_hash_provider(&self.hash)?;
         let signable: std::result::Result<Signable, serde_json::Error> =
             serde_json::from_slice(data);
         let key = match signable {
-            Ok(signable) => derive_hash(hasher, signable.seed.as_bytes()),
-            Err(_) => derive_hash(hasher, data),
+            Ok(signable) => derive_hash(hasher, signable.seed.as_bytes()).await,
+            Err(_) => derive_hash(hasher, data).await,
         };
         match gethostname::gethostname().to_str() {
             Some(host) => {
@@ -50,7 +64,7 @@ impl Annotator for SourceAnnotator {
                     None,
                 );
                 annotation.set_tag(self.tag_manager.get_tag());
-                let signature = serialise_and_sign(&self.sign, &annotation)?;
+                let signature = serialise_and_sign(&self.sign, &annotation).await?;
                 annotation.with_signature(&signature);
                 Ok(annotation)
             }
@@ -66,8 +80,8 @@ mod source_tests {
     use crate::managers::tag_manager::TAG_ENV_KEY;
     use crate::{config, providers::sign_provider::get_priv_key};
 
-    #[test]
-    fn tag_source_annotator() {
+    #[tokio::test]
+    async fn tag_source_annotator() {
         let config: config::SdkInfo =
             serde_json::from_slice(crate::CONFIG_BYTES.as_slice()).unwrap();
 
@@ -78,18 +92,18 @@ mod source_tests {
         let serialised = serde_json::to_vec(&signable).unwrap();
 
         let mut source_annotator = SourceAnnotator::new(&config).unwrap();
-        let annotation = source_annotator.execute(&serialised).unwrap();
+        let annotation = source_annotator.execute(&serialised).await.unwrap();
         assert!(annotation.tag.is_some());
         assert_eq!(annotation.tag.unwrap(), "");
 
         std::env::set_var(TAG_ENV_KEY, "TAG");
-        let annotation = source_annotator.execute(&serialised).unwrap();
+        let annotation = source_annotator.execute(&serialised).await.unwrap();
         assert!(annotation.tag.is_some());
         assert_eq!(annotation.tag.unwrap(), "TAG");
     }
 
-    #[test]
-    fn valid_and_invalid_source_annotator() {
+    #[tokio::test]
+    async fn valid_and_invalid_source_annotator() {
         let config: config::SdkInfo =
             serde_json::from_slice(crate::CONFIG_BYTES.as_slice()).unwrap();
 
@@ -104,15 +118,15 @@ mod source_tests {
 
         let mut source_annotator_1 = SourceAnnotator::new(&config).unwrap();
         let mut source_annotator_2 = SourceAnnotator::new(&config2).unwrap();
-        let valid_annotation = source_annotator_1.execute(&serialised).unwrap();
-        let invalid_annotation = source_annotator_2.execute(&serialised);
+        let valid_annotation = source_annotator_1.execute(&serialised).await.unwrap();
+        let invalid_annotation = source_annotator_2.execute(&serialised).await;
 
         assert!(valid_annotation.validate_base());
         assert!(invalid_annotation.is_err());
     }
 
-    #[test]
-    fn make_source_annotation() {
+    #[tokio::test]
+    async fn make_source_annotation() {
         let config: config::SdkInfo =
             serde_json::from_slice(crate::CONFIG_BYTES.as_slice()).unwrap();
 
@@ -126,7 +140,7 @@ mod source_tests {
         let serialised = serde_json::to_vec(&signable).unwrap();
 
         let mut source_annotator = SourceAnnotator::new(&config).unwrap();
-        let annotation = source_annotator.execute(&serialised).unwrap();
+        let annotation = source_annotator.execute(&serialised).await.unwrap();
 
         assert!(annotation.tag.is_some());
         assert!(annotation.validate_base());

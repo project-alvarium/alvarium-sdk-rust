@@ -3,6 +3,7 @@ use crate::errors::{Error, Result};
 use alvarium_annotator::SignProvider;
 use crypto::signatures::ed25519::{PublicKey, SecretKey, Signature};
 
+#[derive(Clone)]
 pub struct Ed25519Provider {
     public: PublicKey,
     private: SecretKey,
@@ -25,13 +26,14 @@ impl Ed25519Provider {
     }
 }
 
+#[async_trait::async_trait]
 impl SignProvider for Ed25519Provider {
     type Error = crate::errors::Error;
-    fn sign(&self, content: &[u8]) -> Result<String> {
+    async fn sign(&self, content: &[u8]) -> Result<String> {
         Ok(hex::encode(self.private.sign(content).to_bytes()))
     }
 
-    fn verify(&self, content: &[u8], signed: &[u8]) -> Result<bool> {
+    async fn verify(&self, content: &[u8], signed: &[u8]) -> Result<bool> {
         let sig = get_signature(signed)?;
         Ok(self.public.verify(&sig, content))
     }

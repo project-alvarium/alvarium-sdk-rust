@@ -7,7 +7,7 @@ use alvarium_annotator::constants::{
     ACTION_CREATE, ACTION_MUTATE, ACTION_PUBLISH, ACTION_TRANSIT, ANNOTATION_SOURCE,
 };
 use alvarium_annotator::{MessageWrapper, Publisher};
-
+use base64::{engine::general_purpose::STANDARD, Engine};
 pub struct SDK<'a, Pub: Publisher> {
     annotators: &'a mut [Box<SdkAnnotator>],
     pub cfg: SdkInfo,
@@ -45,14 +45,14 @@ impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error>
     pub async fn create(&mut self, data: &[u8]) -> Result<()> {
         let mut ann_list = AnnotationList::default();
         for annotator in self.annotators.iter_mut() {
-            ann_list.items.push(annotator.execute(data)?);
+            ann_list.items.push(annotator.execute(data).await?);
         }
 
         let ann_bytes = serde_json::to_vec(&ann_list)?;
         let wrapper = MessageWrapper {
             action: ACTION_CREATE.clone(),
             message_type: std::any::type_name::<AnnotationList>(),
-            content: &base64::encode(ann_bytes),
+            content: &STANDARD.encode(ann_bytes),
         };
         self.stream.publish(wrapper).await
     }
@@ -61,18 +61,18 @@ impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error>
         let mut ann_list = AnnotationList::default();
 
         let mut source = new_annotator(ANNOTATION_SOURCE.clone(), self.cfg.clone())?;
-        let annotation = source.execute(old)?;
+        let annotation = source.execute(old).await?;
         ann_list.items.push(annotation);
 
         for annotator in self.annotators.iter_mut() {
-            ann_list.items.push(annotator.execute(new)?);
+            ann_list.items.push(annotator.execute(new).await?);
         }
 
         let ann_bytes = serde_json::to_vec(&ann_list)?;
         let wrapper = MessageWrapper {
             action: ACTION_MUTATE.clone(),
             message_type: std::any::type_name::<AnnotationList>(),
-            content: &base64::encode(ann_bytes),
+            content: &STANDARD.encode(ann_bytes),
         };
         self.stream.publish(wrapper).await
     }
@@ -80,14 +80,14 @@ impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error>
     pub async fn transit(&mut self, data: &[u8]) -> Result<()> {
         let mut ann_list = AnnotationList::default();
         for annotator in self.annotators.iter_mut() {
-            ann_list.items.push(annotator.execute(data)?);
+            ann_list.items.push(annotator.execute(data).await?);
         }
 
         let ann_bytes = serde_json::to_vec(&ann_list)?;
         let wrapper = MessageWrapper {
             action: ACTION_TRANSIT.clone(),
             message_type: std::any::type_name::<AnnotationList>(),
-            content: &base64::encode(ann_bytes),
+            content: &STANDARD.encode(ann_bytes),
         };
         self.stream.publish(wrapper).await
     }
@@ -95,14 +95,14 @@ impl<'a, Pub: Publisher<StreamConfig = StreamInfo, Error = crate::errors::Error>
     pub async fn publish(&mut self, data: &[u8]) -> Result<()> {
         let mut ann_list = AnnotationList::default();
         for annotator in self.annotators.iter_mut() {
-            ann_list.items.push(annotator.execute(data)?);
+            ann_list.items.push(annotator.execute(data).await?);
         }
 
         let ann_bytes = serde_json::to_vec(&ann_list)?;
         let wrapper = MessageWrapper {
             action: ACTION_PUBLISH.clone(),
             message_type: std::any::type_name::<AnnotationList>(),
-            content: &base64::encode(ann_bytes),
+            content: &STANDARD.encode(ann_bytes),
         };
         self.stream.publish(wrapper).await
     }

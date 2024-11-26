@@ -135,6 +135,7 @@ mod mqtt_tests {
         list.items.push(
             pki_annotator
                 .execute(&serde_json::to_vec(&signable).unwrap())
+                .await
                 .unwrap(),
         );
 

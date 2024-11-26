@@ -55,15 +55,18 @@ impl Signable {
         Signable { seed, signature }
     }
 
-    pub fn verify_signature(&self, provider: &SignatureProviderWrap) -> Result<bool> {
+    pub async fn verify_signature(&self, provider: &SignatureProviderWrap) -> Result<bool> {
         if self.signature.is_empty() {
             return Err(Error::EmptySignature);
         }
 
+        let sig_bytes = hex::decode(&self.signature)?;
         match provider {
             SignatureProviderWrap::Ed25519(provider) => {
-                let sig_bytes = hex::decode(&self.signature)?;
-                Ok(provider.verify(self.seed.as_bytes(), &sig_bytes)?)
+                Ok(provider.verify(self.seed.as_bytes(), &sig_bytes).await?)
+            }
+            SignatureProviderWrap::Custom(provider) => {
+                Ok(provider.verify(self.seed.as_bytes(), &sig_bytes).await?)
             }
         }
     }
@@ -91,18 +94,18 @@ mod config_tests {
             SignatureProviderWrap::Ed25519(Ed25519Provider::new(&config.signature).unwrap());
 
         let data = "A data packet to sign".to_string();
-        let sig = sig_provider.sign(data.as_bytes()).unwrap();
+        let sig = sig_provider.sign(data.as_bytes()).await.unwrap();
 
         let signable = Signable {
             seed: data,
             signature: sig,
         };
 
-        assert!(signable.verify_signature(&sig_provider).unwrap())
+        assert!(signable.verify_signature(&sig_provider).await.unwrap())
     }
 
-    #[test]
-    fn failed_verification_signable() {
+    #[tokio::test]
+    async fn failed_verification_signable() {
         let config: config::SdkInfo =
             serde_json::from_slice(crate::CONFIG_BYTES.as_slice()).unwrap();
         let bad_priv_key = SecretKey::generate().unwrap();
@@ -118,6 +121,6 @@ mod config_tests {
         let sig_provider =
             SignatureProviderWrap::Ed25519(Ed25519Provider::new(&config.signature).unwrap());
 
-        assert!(!signable.verify_signature(&sig_provider).unwrap())
+        assert!(!signable.verify_signature(&sig_provider).await.unwrap())
     }
 }
