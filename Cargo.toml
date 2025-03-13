@@ -20,7 +20,7 @@ hex = "0.4.3"
 base64 = "0.22.1"
 
 alvarium-annotator = { git = "https://github.com/project-alvarium/alvarium-annotator", branch = "main" }
-streams = { git = "https://github.com/demia-protocol/streams", branch = "iota-sdk", features = ["utangle-client", "did"] }
+streams = { git = "https://github.com/demia-protocol/streams", branch = "main", features = ["utangle-client", "did"] }
 
 iota-crypto = {version = "0.23.2", default-features = false, features = ["ed25519", "sha", "random"]}
 
